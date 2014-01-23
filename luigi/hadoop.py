@@ -175,7 +175,7 @@ class HadoopJobError(RuntimeError):
         self.err = err
 
 
-def run_and_track_hadoop_job(arglist, tracking_url_callback=None, env=None):
+def run_and_track_hadoop_job(arglist, tracking_url_callback=None, env=None,  stdout_override=None):
     ''' Runs the job by invoking the command from the given arglist. Finds tracking urls from the output and attempts to fetch
     errors using those urls if the job fails. Throws HadoopJobError with information about the error (including stdout and stderr
     from the process) on failure and returns normally otherwise.
@@ -194,9 +194,10 @@ def run_and_track_hadoop_job(arglist, tracking_url_callback=None, env=None):
             f.write(json.dumps(history))
             f.close()
 
-    def track_process(arglist, tracking_url_callback, env=None):
+    def track_process(arglist, tracking_url_callback, env=None, stdout_override=None):
         # Dump stdout to a temp file, poll stderr and log it
         temp_stdout = tempfile.TemporaryFile()
+
         proc = subprocess.Popen(arglist, stdout=temp_stdout, stderr=subprocess.PIPE, env=env, close_fds=True)
 
         # We parse the output to try to find the tracking URL.
@@ -234,7 +235,7 @@ def run_and_track_hadoop_job(arglist, tracking_url_callback=None, env=None):
 
         if proc.returncode == 0:
             write_luigi_history(arglist, {'job_id': job_id})
-            return
+            return out
 
         # Try to fetch error logs if possible
         message = 'Streaming job failed with exit code %d. ' % proc.returncode
@@ -255,7 +256,7 @@ def run_and_track_hadoop_job(arglist, tracking_url_callback=None, env=None):
     if tracking_url_callback is None:
         tracking_url_callback = lambda x: None
 
-    track_process(arglist, tracking_url_callback, env)
+    return track_process(arglist, tracking_url_callback, env)
 
 
 def fetch_task_failures(tracking_url):

@@ -341,9 +341,12 @@ class HiveQueryRunner(luigi.hadoop.JobRunner):
                     arglist += ['--hiveconf', '{0}={1}'.format(k, v)]
 
             logger.info(arglist)
-            luigi.hadoop.run_and_track_hadoop_job(arglist)
-
-
+            x = luigi.hadoop.run_and_track_hadoop_job(arglist)
+            logger.info(len(x))
+            handle = job.output().open('w')
+            handle.write(x)
+            handle.close()
+ 
 class HiveTableTarget(luigi.Target):
     """ exists returns true if the table exists """
 
