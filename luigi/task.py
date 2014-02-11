@@ -17,6 +17,8 @@ import logging
 import parameter
 import warnings
 import traceback
+import os
+from subprocess import call, Popen, PIPE
 
 Parameter = parameter.Parameter
 logger = logging.getLogger('luigi-interface')
@@ -249,6 +251,11 @@ class Task(object):
         return [(param_name, list_to_tuple(result[param_name])) for param_name, param_obj in params]
 
     def __init__(self, *args, **kwargs):
+        process = Popen(["git", "rev-parse", "--show-toplevel"], stdout=PIPE)
+        exit_code = process.wait()
+        if exit_code != 0:
+            raise Exception('Task must live within a git repository')
+
         params = self.get_params()
         param_values = self.get_param_values(params, args, kwargs)
 
